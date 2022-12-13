@@ -1,0 +1,7 @@
+{
+  "name": "type-programming",
+  "packageManager": "yarn@3.3.0",
+  "devDependencies": {
+    "prettier": "^2.8.0"
+  }
+}
