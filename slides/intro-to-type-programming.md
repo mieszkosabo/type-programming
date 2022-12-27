@@ -10,6 +10,16 @@ paginate: true
 
 <!-- _footer: Mieszko Sabo-->
 
+<style>
+ .container {
+    display: flex;
+ }
+
+ .col {
+    flex: 1;
+ }
+</style>
+
 # Table of contents
 
 - motivating example
@@ -21,34 +31,31 @@ paginate: true
 # Motivating example
 
 ```ts
-createStudent("mieszko", "99123456789", 99); // OK
-createStudent("mieszko", "99123456789", 90); // 🚨 Err, classOf doesn't match pesel 🤯
+navigate("/blog/:postId", { postId: "aaa-bbb-ccc" }); // OK ✅
 
-function createStudent<T extends string>(
-  name: string,
-  pesel: T,
-  classOf: DerivedClassOf<T>
-) {
-  return {
-    name,
-    pesel,
-    classOf,
-  };
-}
+// @ts-expect-error
+navigate("/blog/:postId", { someRandomKey: "aaa-bbb-ccc" }); // Err 🚨
+
+navigate("/blog/:postId/comment/:commentId", {
+  postId: "aaa-bbb-ccc",
+  commentId: "c1",
+}); // OK ✅
 ```
 
----
+# Motivating example continued
 
 ```ts
-type Pesel = string;
+declare function navigate<U extends string>(
+  path: U,
+  params: ParseUrlParams<U>
+): void;
 
-type DerivedClassOf<P extends Pesel> =
-  P extends `${infer A}${infer B}${infer Rest}` ? ToNumber<`${A}${B}`> : never;
-
-type ToNumber<
-  T extends string,
-  R extends any[] = []
-> = T extends `${R["length"]}` ? R["length"] : ToNumber<T, [1, ...R]>;
+type ParseUrlParams<url extends string> =
+  url extends `${infer left}/${infer right}`
+    ? ParseUrlParams<left> & ParseUrlParams<right>
+    : url extends `:${infer param}`
+    ? { [k in param]: string }
+    : {};
 ```
 
 # Types refresher
@@ -164,7 +171,7 @@ type b = keyof union;
   - `A & any = any`
   - `A | any = any`
 
-# Programming on the type level
+# Useful type operators
 
 # Objects
 
@@ -266,4 +273,185 @@ type NonEmpty<T> = [T, ...T[]]; // array of at least one element
 type Padded = [0, ...number[], 0];
 ```
 
+# Programming on the type level
+
+## What do we need to program?
+
+<div class="container">
+<div class="col">
+  <div>
+    <li> conditionals / code branching </li>
+    <li> loops </li>
+    <li> data structures </li>
+    <li> functions </li>
+    <li> basic algebra </li>
+  </div>
+</div>
+
+## What do we need to program?
+
+<div class="container">
+<div class="col">
+  <div>
+    <li> conditionals / code branching </li>
+    <li> loops </li>
+    <li> data structures </li>
+    <li> functions </li>
+    <li> basic algebra </li>
+  </div>
+</div>
+
+<div class="col">
+  <div>
+    <li> conditional types </li>
+    <li> recursion </li>
+    <li> type level data structures </li>
+    <li> generic types </li>
+    <li> cheeky usage or tuples' lengths</li>
+  </div>
+</div>
+</div>
+
+# Generic types as functions
+
+```ts
+// value-level TypeScript
+const makeTuple = (a, b) => [a, b];
+
+// type-level TypeScript
+type MakeTuple<T, U> = [T, U];
+```
+
+# Generic types as functions
+
+```ts
+// value-level TypeScript
+const makeTuple = (a, b) => [a, b];
+//                ^ function arguments
+//                          ^ return value
+
+// type-level TypeScript
+type MakeTuple<T, U> = [T, U];
+//             ^ type arguments/parameters
+//                     ^ return type
+```
+
+# Generic types as functions
+
+```ts
+// value-level TypeScript
+const makeTuple = (a: number, b: string) => [a, b];
+
+// type-level TypeScript
+type MakeTuple<T extends number, U extends string> = [T, U];
+```
+
+# Conditional types
+
+```ts
+type IsString<T> = T extends string ? true : false;
+```
+
+# Conditional types
+
+```ts
+type IsString<T> = T extends string ? true : false;
+//                ^ condition, must be ^ true branch
+//                in a form of a             ^ false branch
+//                `X extends Y`
+```
+
+# Conditional types
+
+```ts
+type If<Cond extends boolean, IfBranch, ElseBranch> = Cond extends true
+  ? IfBranch
+  : ElseBranch;
+
+type Example = If<IsString<"ala">, string, number>; // string
+```
+
+# Recursion
+
+- Recursion is how loops can be emulated in functional languages.
+- In general, a recursive function is a function that calls itself (usually with different arguments).
+
+```ts
+type RecursiveType<Input> = Condition<Input> extends true
+  ? BaseCase<Input>
+  : RecursiveType<OtherInput>;
+
+// example on value level:
+
+const fib = (n: number): number => {
+  if (n <= 1) {
+    return n;
+  }
+  return fib(n - 1) + fib(n - 2);
+};
+```
+
+# Recursion
+
+```ts
+type Elem<X, T extends any[]> = T extends [infer Y, ...infer Ys]
+  ? Or<Equals<X, Y>, Elem<X, Ys>>
+  : false;
+```
+
+# Operations on natural numbers
+
+- In type programming in TS, we use array lengths to represent natural numbers.
+- So if we need to add 2 to 3, we need to create an array of length 2, array of length 3, concatenate them and get their length type.
+
+# Operations on natural numbers
+
+```ts
+type Append<T extends any[], U> = [...T, U];
+
+type appendExample = Append<[1, 2], 3>; // [1, 2, 3]
+
+type CreateArrOfLen<
+  N extends number,
+  CurrArr extends any[] = []
+> = CurrArr["length"] extends N
+  ? CurrArr
+  : CreateArrOfLen<N, Append<CurrArr, any>>;
+
+type createArrOfLenExample = CreateArrOfLen<3>; // [any, any, any]
+```
+
+# Operations on natural numbers
+
+```ts
+type Concat<A extends any[], B extends any[]> = [...A, ...B];
+
+type Length<T extends any[]> = T["length"] extends number ? T["length"] : never;
+
+type Add<N extends number, M extends number> = Length<
+  Concat<CreateArrOfLen<N>, CreateArrOfLen<M>>
+>;
+
+type test1 = Add<1, 2>; // 3
+type test2 = Add<42, 58>; // 100
+
+type test3 = Add<0, 0>; // 0
+type test4 = Add<-1, 1>; // Error, recursion too deep (infinite loop)
+```
+
+# Operations on natural numbers
+
+```ts
+type Sub<N extends number, M extends number> = CreateArrOfLen<N> extends [
+  ...infer U,
+  ...CreateArrOfLen<M>
+]
+  ? Length<U>
+  : never;
+```
+
 # Live Coding!
+
+# Advent of Code day 6
+
+`../assets/aoc-day6.md`
