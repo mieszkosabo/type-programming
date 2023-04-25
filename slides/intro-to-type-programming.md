@@ -450,6 +450,10 @@ type Sub<N extends number, M extends number> = CreateArrOfLen<N> extends [
   : never;
 ```
 
+# Repository with slides and code examples
+
+https://github.com/mieszkosabo/type-programming
+
 # Live Coding!
 
 # Advent of Code day 6

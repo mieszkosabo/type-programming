@@ -223,6 +223,8 @@ namespace scratchpad {
 
     type union = x | y;
     type b = keyof union;
+
+    type len = [1, 2, 3, 4]["length"];
   }
 
   namespace BBB {
@@ -319,4 +321,21 @@ namespace scratchpad {
     T extends string,
     R extends any[] = []
   > = T extends `${R["length"]}` ? R["length"] : ToNumber<T, [1, ...R]>;
+}
+
+import type { Equals, ExpectTrue } from "../examples/testing_utils";
+
+namespace flatten {
+  type DeepFlat<T> = T extends Array<infer U> ? DeepFlat<U> : T;
+  type Flatten<T> = T extends [infer First, ...infer Rest]
+    ? [DeepFlat<First>, ...Flatten<Rest>]
+    : [];
+
+  type a = Flatten<[1, 2, [3, 4, [5]], 6, [7, 8]]>;
+
+  type cases = [
+    ExpectTrue<Equals<Flatten<[]>, []>>,
+    ExpectTrue<Equals<Flatten<[1, 2, 3, 4]>, [1, 2, 3, 4]>>,
+    ExpectTrue<Equals<Flatten<[1, [2], [[3]], [[[4]]]]>, [1, 2, 3, 4]>>
+  ];
 }

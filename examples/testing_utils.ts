@@ -17,6 +17,7 @@ export type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
 >() => T extends Y ? 1 : 2
   ? true
   : false;
+
 export type NotEquals<X, Y> = Equals<X, Y> extends true ? false : true;
 
 export type MergeInsertions<T> = T extends object
